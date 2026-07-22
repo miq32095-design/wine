@@ -2,7 +2,7 @@
   "id": "./",
   "name": "情绪调酒师 Mood Mixer",
   "short_name": "Mood Mixer",
-  "start_url": "./?pwa=7",
+  "start_url": "./?pwa=71",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

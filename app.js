@@ -3,7 +3,7 @@
 
   var app = document.getElementById("app");
   var toastEl = document.getElementById("toast");
-  var APP_VERSION = "7.0";
+  var APP_VERSION = "7.1";
 
   var memoryStorage = {};
 
@@ -1174,36 +1174,209 @@
 
   function paintCanvasDrink(ctx, drink) {
     ctx.save();
-    ctx.translate(540,650);
-    var gradient = ctx.createLinearGradient(0,-220,0,230);
-    gradient.addColorStop(0,drink.c1);
-    gradient.addColorStop(.62,drink.c2);
-    gradient.addColorStop(1,"#efad67");
-    ctx.shadowColor = "rgba(0,0,0,.2)";
-    ctx.shadowBlur = 25;
-    ctx.lineWidth = 7;
-    ctx.strokeStyle = "rgba(255,255,255,.58)";
-    roundRect(ctx,-175,-265,350,500,54);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = gradient;
-    roundRect(ctx,-160,-170,320,390,44);
-    ctx.fill();
-    for (var i = 0; i < 23; i += 1) {
-      ctx.globalAlpha = .07 + (i % 5) * .025;
-      ctx.fillStyle = i % 2 ? drink.c1 : drink.c2;
+    ctx.translate(540,620);
+
+    var shape = (drink && drink.glassShape) || "hurricane";
+    var colorA = (drink && drink.c1) || "#f592ad";
+    var colorB = (drink && drink.c2) || "#8ecfd8";
+    var garnish = (drink && drink.garnish) || "mint";
+    var seed = hashSeed(String(colorA) + String(colorB) + shape + garnish + ((drink && drink.name) || ""));
+
+    var shapes = {
+      hurricane: {
+        bowl:"M112 70 C101 80 98 96 100 113 C102 134 113 151 114 170 C115 187 106 205 104 228 C100 273 121 307 160 323 C199 307 220 273 216 228 C214 205 205 187 206 170 C207 151 218 134 220 113 C222 96 219 80 208 70 C184 61 136 61 112 70 Z",
+        liquid:"M116 111 C113 128 118 143 120 160 C122 178 114 196 113 227 C111 266 129 291 160 304 C191 291 209 266 207 227 C206 196 198 178 200 160 C202 143 207 128 204 111 C182 104 138 104 116 111 Z",
+        stem:"M158 323 C158 342 158 361 158 381",
+        base:"M109 394 C130 386 190 386 211 394 C193 404 127 404 109 394 Z",
+        straw:[205,70,179,175], garnishCx:227, garnishCy:80,
+        leaf1:[209,119,225,105,245,106,257,120,242,139,224,142,209,119],
+        leaf2:[191,136,205,124,223,127,232,142,217,154,201,153,191,136]
+      },
+      goblet: {
+        bowl:"M100 77 C90 116 89 163 100 220 C110 270 132 304 160 317 C188 304 210 270 220 220 C231 163 230 116 220 77 C188 66 132 66 100 77 Z",
+        liquid:"M107 111 C99 144 100 182 109 226 C118 267 136 290 160 299 C184 290 202 267 211 226 C220 182 221 144 213 111 C185 103 135 103 107 111 Z",
+        stem:"M157 316 C158 340 158 362 157 385",
+        base:"M103 395 C122 387 199 387 217 395 C199 406 121 406 103 395 Z",
+        straw:[197,77,174,169], garnishCx:222, garnishCy:84,
+        leaf1:[204,116,221,102,241,104,253,117,239,137,220,140,204,116],
+        leaf2:[186,132,201,120,220,124,230,140,214,153,197,151,186,132]
+      },
+      highball: {
+        bowl:"M115 59 C110 119 108 189 114 270 C117 310 129 339 160 349 C191 339 203 310 206 270 C212 189 210 119 205 59 C181 53 139 53 115 59 Z",
+        liquid:"M120 101 C116 150 116 206 121 269 C124 299 133 319 160 329 C187 319 196 299 199 269 C204 206 204 150 200 101 C178 96 142 96 120 101 Z",
+        stem:"",
+        base:"M116 357 C134 352 187 352 204 357 C190 365 130 365 116 357 Z",
+        straw:[198,60,178,171], garnishCx:219, garnishCy:73,
+        leaf1:[205,120,220,108,238,109,250,122,236,139,220,142,205,120],
+        leaf2:[189,135,202,125,220,128,228,143,214,154,199,152,189,135]
+      },
+      martini: {
+        bowl:"M75 86 C102 132 128 171 160 202 C192 171 218 132 245 86 C196 75 124 75 75 86 Z",
+        liquid:"M90 104 C112 137 134 165 160 188 C186 165 208 137 230 104 C191 97 129 97 90 104 Z",
+        stem:"M158 202 C158 258 158 330 157 382",
+        base:"M102 395 C124 386 198 386 218 395 C199 406 120 406 102 395 Z",
+        straw:[213,77,178,154], garnishCx:225, garnishCy:80,
+        leaf1:[210,112,225,99,243,100,254,113,241,132,224,135,210,112],
+        leaf2:[191,127,204,117,221,120,230,135,215,147,200,145,191,127]
+      }
+    };
+    var g = shapes[shape] || shapes.hurricane;
+
+    function drawLeaf(values, fill, stroke) {
       ctx.beginPath();
-      ctx.ellipse(-120 + (i * 73) % 250,-130 + (i * 97) % 310,18 + (i % 4) * 9,13 + (i % 5) * 8,(i * 17) * Math.PI / 180,0,Math.PI*2);
+      ctx.moveTo(values[0], values[1]);
+      ctx.bezierCurveTo(values[2], values[3], values[4], values[5], values[6], values[7]);
+      ctx.bezierCurveTo(values[8], values[9], values[10], values[11], values[12], values[13]);
+      ctx.closePath();
+      ctx.fillStyle = fill;
       ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = "rgba(255,255,255,.48)";
-    ctx.lineWidth = 4;
-    for (var j = 0; j < 13; j += 1) {
-      ctx.beginPath();
-      ctx.arc(-120 + (j * 61) % 250,-110 + (j * 91) % 285,5 + (j % 4) * 2,0,Math.PI*2);
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 2.1;
       ctx.stroke();
     }
+
+    function drawMint() {
+      drawLeaf(g.leaf1, "#66bc76", "rgba(37,87,50,.34)");
+      drawLeaf(g.leaf2, "#4ea866", "rgba(37,87,50,.32)");
+      ctx.beginPath();
+      ctx.moveTo(216,134); ctx.bezierCurveTo(203,145,193,154,185,170);
+      ctx.strokeStyle = "#4f9861"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.stroke();
+    }
+
+    function drawBerry() {
+      [[g.garnishCx - 7, g.garnishCy + 12, 8, "#d84e79"],[g.garnishCx + 4, g.garnishCy + 8, 8, "#b94877"],[g.garnishCx + 13, g.garnishCy + 17, 7, "#e06e86"]].forEach(function(item){
+        ctx.beginPath(); ctx.arc(item[0], item[1], item[2], 0, Math.PI*2); ctx.fillStyle = item[3]; ctx.fill();
+      });
+      ctx.beginPath();
+      ctx.moveTo(g.garnishCx + 2, g.garnishCy + 2);
+      ctx.bezierCurveTo(g.garnishCx + 3, g.garnishCy - 5, g.garnishCx + 8, g.garnishCy - 10, g.garnishCx + 14, g.garnishCy - 13);
+      ctx.strokeStyle = "#5e9d61"; ctx.lineWidth = 2.4; ctx.stroke();
+    }
+
+    function drawCitrus() {
+      ctx.save();
+      ctx.translate(g.garnishCx, g.garnishCy); ctx.rotate(20 * Math.PI / 180);
+      ctx.beginPath(); ctx.ellipse(0,0,21,10,0,0,Math.PI*2);
+      ctx.strokeStyle = "#f0a34f"; ctx.lineWidth = 7; ctx.stroke();
+      ctx.restore();
+    }
+
+    // watercolor halo behind the glass
+    var halo = ctx.createRadialGradient(160,180,18,160,180,165);
+    halo.addColorStop(0, colorA + "40");
+    halo.addColorStop(.58, colorB + "28");
+    halo.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.ellipse(160,180,120,158,0,0,Math.PI*2);
+    ctx.fill();
+
+    // doodle accents around glass
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = "rgba(255,248,242,.66)"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(58,116); ctx.bezierCurveTo(46,106,45,88,58,83); ctx.bezierCurveTo(72,77,83,95,73,108); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(246,128); ctx.bezierCurveTo(259,117,276,121,281,134); ctx.stroke();
+    ctx.strokeStyle = "rgba(241,176,95,.68)"; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(259,148); ctx.bezierCurveTo(268,141,279,143,284,153); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(69,286); ctx.bezierCurveTo(80,282,92,284,102,292); ctx.stroke();
+    function drawSpark(x, y, s, color) {
+      ctx.strokeStyle = color; ctx.lineWidth = 2.3;
+      ctx.beginPath();
+      ctx.moveTo(x, y - s); ctx.lineTo(x, y - s/3);
+      ctx.moveTo(x, y + s/3); ctx.lineTo(x, y + s);
+      ctx.moveTo(x - s, y); ctx.lineTo(x - s/3, y);
+      ctx.moveTo(x + s/3, y); ctx.lineTo(x + s, y);
+      ctx.stroke();
+    }
+    drawSpark(86, 86, 12, "rgba(255,248,242,.56)");
+    drawSpark(240, 85, 10, "rgba(241,176,95,.62)");
+
+    var bowlPath = new Path2D(g.bowl);
+    var liquidPath = new Path2D(g.liquid);
+    var basePath = new Path2D(g.base);
+    var stemPath = g.stem ? new Path2D(g.stem) : null;
+
+    // glass outline shadow
+    ctx.shadowColor = "rgba(0,0,0,.18)";
+    ctx.shadowBlur = 28;
+    ctx.fillStyle = "rgba(255,255,255,.06)";
+    ctx.fill(bowlPath);
+    ctx.shadowBlur = 0;
+
+    // liquid clipping and watercolor blotches
+    var gradient = ctx.createLinearGradient(160,96,160,310);
+    gradient.addColorStop(0, colorA);
+    gradient.addColorStop(.58, colorB);
+    gradient.addColorStop(1, "#f2b064");
+    ctx.save();
+    ctx.clip(liquidPath);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(80, 92, 160, 240);
+    for (var i = 0; i < 17; i += 1) {
+      var cx = 104 + ((seed + i * 47) % 112);
+      var cy = 116 + ((seed + i * 67) % 168);
+      var rx = 13 + ((seed + i * 19) % 26);
+      var ry = 11 + ((seed + i * 23) % 31);
+      var fill = i % 3 === 0 ? colorA : (i % 3 === 1 ? colorB : "#f4b35f");
+      ctx.globalAlpha = .13 + ((i % 5) * .035);
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, ((i * 17) % 48 - 24) * Math.PI / 180, 0, Math.PI*2);
+      ctx.fill();
+    }
+    // little white speckles and top sheen
+    ctx.globalAlpha = .28;
+    ctx.fillStyle = "#ffffff";
+    for (var j = 0; j < 18; j += 1) {
+      var sx = 110 + ((seed + j * 31) % 100);
+      var sy = 112 + ((seed + j * 53) % 178);
+      var sr = 1 + ((j + seed) % 3);
+      ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = .30;
+    ctx.strokeStyle = "rgba(255,255,255,.42)";
+    ctx.lineWidth = 5.5; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(121, 110); ctx.bezierCurveTo(139,105,183,105,201,111); ctx.stroke();
+    ctx.restore();
+    ctx.globalAlpha = 1;
+
+    // ice cubes
+    [[136,163,-18],[181,194,11],[152,232,-40]].forEach(function(item){
+      ctx.save();
+      ctx.translate(item[0], item[1]); ctx.rotate(item[2] * Math.PI / 180);
+      ctx.beginPath();
+      roundRect(ctx, -16, -19, 32, 38, 8);
+      ctx.fillStyle = "rgba(255,255,255,.14)"; ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,.24)"; ctx.lineWidth = 2; ctx.stroke();
+      ctx.restore();
+    });
+
+    // glass outline
+    ctx.strokeStyle = "rgba(246,241,244,.78)";
+    ctx.lineWidth = 4.2;
+    ctx.stroke(bowlPath);
+    ctx.strokeStyle = "rgba(255,255,255,.20)";
+    ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.moveTo(122,86); ctx.bezierCurveTo(142,80,178,80,198,86); ctx.stroke();
+
+    // straw
+    var strawGrad = ctx.createLinearGradient(g.straw[0], g.straw[1], g.straw[2], g.straw[3]);
+    strawGrad.addColorStop(0, colorA); strawGrad.addColorStop(1, colorB);
+    ctx.strokeStyle = strawGrad; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(g.straw[0], g.straw[1]); ctx.lineTo(g.straw[2], g.straw[3]); ctx.stroke();
+    ctx.strokeStyle = "#75d2df"; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(g.straw[0]-24, g.straw[1]+5); ctx.lineTo(g.straw[0]+3, g.straw[1]+2); ctx.stroke();
+
+    // garnish
+    if (garnish === "mint") drawMint();
+    else if (garnish === "berry") drawBerry();
+    else if (garnish === "citrus") drawCitrus();
+
+    // stem/base
+    if (stemPath) {
+      ctx.strokeStyle = "rgba(246,241,244,.78)"; ctx.lineWidth = 4.2; ctx.lineCap = "round"; ctx.stroke(stemPath);
+    }
+    ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fill(basePath);
+    ctx.strokeStyle = "rgba(246,241,244,.72)"; ctx.lineWidth = 3; ctx.stroke(basePath);
+
     ctx.restore();
   }
 
@@ -1733,7 +1906,7 @@
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("./sw.js?v=7").catch(function () {});
+      navigator.serviceWorker.register("./sw.js?v=711").catch(function () {});
     });
   }
 
