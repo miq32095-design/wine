@@ -63,6 +63,8 @@ let state = {
   installPrompt: null
 };
 
+let glassRenderCounter = 0;
+
 window.addEventListener("beforeinstallprompt", e => {
   e.preventDefault();
   state.installPrompt = e;
@@ -95,12 +97,12 @@ function getGreeting() {
 }
 
 function tinyDrink(drink) {
-  return `<div class="tiny-wrap">${drinkVisual({
+  return `<div class="preview-glass preview-small">${drinkVisual({
     c1: drink.c1,
     c2: drink.c2,
     garnishColor: drink.garnishColor || "#ffb45c",
     glassShape: drink.glassShape || "hurricane"
-  })}</div>`;
+  }, "tiny")}</div>`;
 }
 
 function glassOptionCard(shape, label, active) {
@@ -115,23 +117,95 @@ function glassOptionCard(shape, label, active) {
 
 function drinkVisual(drink, size="large") {
   const shape = drink.glassShape || "hurricane";
-  const bubbles = Array.from({length: 9}, (_,i) =>
-    `<i class="bubble" style="--left:${12 + (i*19)%78}%;--delay:-${(i*.67).toFixed(1)}s;--duration:${4 + (i%4)}s"></i>`
-  ).join("");
+  const uid = `glass-${++glassRenderCounter}`;
+  const colorA = drink.c1 || "#f6a099";
+  const colorB = drink.c2 || "#59d0df";
+  const accent = drink.garnishColor || "#ffb45c";
+
+  const shapes = {
+    hurricane: {
+      bowl: "M103 66 C96 113 90 164 95 221 C99 273 117 314 160 327 C203 314 221 273 225 221 C230 164 224 113 217 66 C191 58 129 58 103 66 Z",
+      liquid: "M108 107 C103 138 98 177 101 222 C104 263 120 292 160 305 C200 292 216 263 219 222 C222 177 217 138 212 107 C185 103 135 103 108 107 Z",
+      stem: true,
+      strawX1: 203, strawY1: 70, strawX2: 176, strawY2: 176,
+      leaf1: "M208 120 C223 107 241 107 253 118 C239 137 222 141 208 120 Z",
+      leaf2: "M189 134 C203 124 221 127 229 142 C214 154 198 153 189 134 Z",
+      garnishCx: 225, garnishCy: 79
+    },
+    goblet: {
+      bowl: "M101 76 C90 116 88 164 100 222 C111 274 132 306 160 317 C188 306 209 274 220 222 C232 164 230 116 219 76 C188 66 132 66 101 76 Z",
+      liquid: "M107 110 C99 144 99 183 109 228 C118 269 135 291 160 300 C185 291 202 269 211 228 C221 183 221 144 213 110 C185 102 135 102 107 110 Z",
+      stem: true,
+      strawX1: 196, strawY1: 78, strawX2: 173, strawY2: 168,
+      leaf1: "M205 116 C220 103 239 103 252 117 C238 136 221 139 205 116 Z",
+      leaf2: "M187 131 C201 120 219 124 228 139 C214 151 197 149 187 131 Z",
+      garnishCx: 221, garnishCy: 84
+    },
+    highball: {
+      bowl: "M116 58 C110 121 108 189 114 269 C117 309 128 340 160 348 C192 340 203 309 206 269 C212 189 210 121 204 58 Z",
+      liquid: "M120 100 C115 150 115 205 120 270 C123 299 131 320 160 329 C189 320 197 299 200 270 C205 205 205 150 200 100 C178 96 142 96 120 100 Z",
+      stem: false,
+      strawX1: 197, strawY1: 62, strawX2: 178, strawY2: 170,
+      leaf1: "M206 122 C220 110 237 110 248 122 C236 139 220 142 206 122 Z",
+      leaf2: "M190 136 C203 126 219 129 227 143 C214 153 200 153 190 136 Z",
+      garnishCx: 218, garnishCy: 74
+    }
+  };
+
+  const g = shapes[shape] || shapes.hurricane;
+
   return `
-    <div class="drink-wrap ${size} shape-${shape}" style="--c1:${drink.c1};--c2:${drink.c2};--garnish:${drink.garnishColor || "#ffb45c"}">
-      <div class="drink-glass">
-        <div class="drink-liquid">
-          ${bubbles}
-          <i class="ice" style="--left:18%;--top:27%;--rot:18deg"></i>
-          <i class="ice" style="--left:52%;--top:44%;--rot:-11deg"></i>
-          <i class="ice" style="--left:30%;--top:63%;--rot:34deg"></i>
-        </div>
-      </div>
-      <div class="leaf leaf-a"></div><div class="leaf leaf-b"></div>
-      <div class="straw"></div>
-      <div class="garnish"></div>
-      <div class="stem"></div><div class="base"></div>
+    <div class="watercolor-glass size-${size} shape-${shape}">
+      <svg viewBox="0 0 320 420" aria-hidden="true" role="img">
+        <defs>
+          <linearGradient id="${uid}-liquid" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="${colorA}" stop-opacity="0.92"/>
+            <stop offset="62%" stop-color="${colorB}" stop-opacity="0.88"/>
+            <stop offset="100%" stop-color="#efb36f" stop-opacity="0.75"/>
+          </linearGradient>
+          <radialGradient id="${uid}-wash" cx="50%" cy="42%" r="52%">
+            <stop offset="0%" stop-color="${colorA}" stop-opacity="0.22"/>
+            <stop offset="55%" stop-color="${colorB}" stop-opacity="0.14"/>
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="${uid}-water" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="7" result="noise"/>
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+          </filter>
+          <filter id="${uid}-soft" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="8"/>
+          </filter>
+        </defs>
+        <ellipse cx="160" cy="208" rx="92" ry="124" fill="url(#${uid}-wash)" filter="url(#${uid}-soft)"/>
+        <g filter="url(#${uid}-water)">
+          <path d="${g.bowl}" fill="rgba(255,255,255,0.09)" stroke="rgba(244,240,246,0.78)" stroke-width="3.2" stroke-linejoin="round"/>
+          <path d="${g.liquid}" fill="url(#${uid}-liquid)" opacity="0.98"/>
+          <path d="M110 112 C136 104 186 104 210 111" fill="none" stroke="rgba(255,255,255,0.34)" stroke-width="5" stroke-linecap="round"/>
+          <ellipse cx="136" cy="163" rx="17" ry="22" fill="rgba(255,255,255,0.16)" stroke="rgba(255,255,255,0.24)" stroke-width="2" transform="rotate(-18 136 163)"/>
+          <ellipse cx="181" cy="194" rx="17" ry="22" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.22)" stroke-width="2" transform="rotate(11 181 194)"/>
+          <ellipse cx="152" cy="232" rx="19" ry="24" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.22)" stroke-width="2" transform="rotate(-40 152 232)"/>
+          <circle cx="136" cy="121" r="3" fill="rgba(255,255,255,0.34)"/>
+          <circle cx="196" cy="206" r="3.5" fill="rgba(255,255,255,0.28)"/>
+          <circle cx="119" cy="243" r="2.8" fill="rgba(255,255,255,0.22)"/>
+          <circle cx="204" cy="246" r="2.8" fill="rgba(255,255,255,0.2)"/>
+          <path d="M122 86 C142 80 178 80 198 86" fill="none" stroke="rgba(255,255,255,0.46)" stroke-width="2.8" stroke-linecap="round"/>
+        </g>
+        <g opacity="0.92">
+          <path d="${g.leaf1}" fill="#5dc06f" stroke="rgba(44,90,56,0.25)" stroke-width="1.4" filter="url(#${uid}-water)"/>
+          <path d="${g.leaf2}" fill="#4aa966" stroke="rgba(44,90,56,0.25)" stroke-width="1.4" filter="url(#${uid}-water)"/>
+        </g>
+        <path d="M${g.strawX1} ${g.strawY1} L${g.strawX2} ${g.strawY2}" stroke="url(#${uid}-liquid)" stroke-width="8" stroke-linecap="round"/>
+        <path d="M${g.strawX1 - 24} ${g.strawY1 + 5} L${g.strawX1 + 3} ${g.strawY1 + 2}" stroke="#7ad3e7" stroke-width="7" stroke-linecap="round"/>
+        <ellipse cx="${g.garnishCx}" cy="${g.garnishCy}" rx="20" ry="10" fill="none" stroke="${accent}" stroke-width="7" transform="rotate(20 ${g.garnishCx} ${g.garnishCy})"/>
+        ${g.stem ? `
+        <g filter="url(#${uid}-water)">
+          <path d="M156 325 C157 342 157 360 156 380" fill="none" stroke="rgba(245,242,247,0.8)" stroke-width="4.5" stroke-linecap="round"/>
+          <ellipse cx="160" cy="392" rx="58" ry="12" fill="rgba(255,255,255,0.08)" stroke="rgba(245,242,247,0.72)" stroke-width="3"/>
+        </g>` : `
+        <g filter="url(#${uid}-water)">
+          <ellipse cx="160" cy="360" rx="46" ry="8" fill="rgba(255,255,255,0.06)" stroke="rgba(245,242,247,0.65)" stroke-width="2.4"/>
+        </g>`}
+      </svg>
     </div>`;
 }
 
@@ -258,7 +332,7 @@ function homeView() {
       <div class="section-title"><h3>最近一杯</h3>${recent?`<button class="text-link" data-nav="cellar">查看酒窖</button>`:""}</div>
       ${recent ? `
         <article class="card recent-card" data-open-drink="${recent.id}">
-          <div class="mini-liquid" style="--c1:${recent.c1};--c2:${recent.c2}"></div>
+          ${tinyDrink(recent)}
           <div><h3>${escapeHTML(recent.name)}</h3><p class="muted small">${escapeHTML(recent.tastingNote.slice(0,42))}…</p></div>
           <span>›</span>
         </article>` : `

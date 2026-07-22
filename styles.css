@@ -507,3 +507,46 @@ input[type="range"] { width: 100%; accent-color: var(--rose); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; transition-duration:.001ms !important; }
 }
+
+
+/* watercolor glass update */
+.hero-drink {
+  min-height: 390px;
+  margin: 6px 0 18px;
+  padding-bottom: 6px;
+}
+.hero-halo {
+  width: 310px;
+  height: 310px;
+  background: radial-gradient(circle, rgba(168,140,255,.26), rgba(243,124,155,.12) 42%, transparent 70%);
+}
+.recent-card { grid-template-columns: 96px 1fr auto; }
+.preview-glass {
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+.watercolor-glass {
+  width: 232px;
+  max-width: 100%;
+  display: grid;
+  place-items: center;
+}
+.watercolor-glass svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+.watercolor-glass.size-large { width: 234px; }
+.result-hero .watercolor-glass.size-large { width: 252px; }
+.mixing-wrap .watercolor-glass.size-large { width: 244px; }
+.watercolor-glass.size-tiny { width: 78px; }
+.drink-preview .watercolor-glass.size-tiny { width: 88px; }
+.recent-card .watercolor-glass.size-tiny { width: 84px; }
+.preview-small { transform: translateY(4px); }
+.recent-card .preview-small { transform: translateY(8px); }
+.drink-preview {
+  background: radial-gradient(circle at 50% 35%, rgba(255,255,255,.08), transparent 58%), rgba(255,255,255,.03);
+}
+.mini-liquid { display: none; }
