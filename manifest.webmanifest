@@ -1,12 +1,15 @@
 {
+  "id": "./",
   "name": "情绪调酒师 Mood Mixer",
   "short_name": "Mood Mixer",
-  "start_url": "./",
+  "start_url": "./?pwa=5",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#130f1a",
-  "theme_color": "#130f1a",
+  "orientation": "portrait",
+  "background_color": "#160f1d",
+  "theme_color": "#160f1d",
   "lang": "zh-CN",
-  "description": "把今天的情绪调成一杯虚拟饮品。",
+  "description": "把今天的情绪调成一杯水彩特调。",
   "icons": [
     {
       "src": "./assets/icon-192.png",
