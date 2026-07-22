@@ -1,10 +1,10 @@
-const CACHE_NAME = "mood-mixer-v5";
+const CACHE_NAME = "mood-mixer-v7";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=5",
-  "./app.js?v=5",
-  "./manifest.webmanifest?v=5",
+  "./styles.css?v=7",
+  "./app.js?v=7",
+  "./manifest.webmanifest?v=7",
   "./assets/icon-192.png",
   "./assets/icon-512.png"
 ];

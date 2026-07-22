@@ -3,7 +3,7 @@
 
   var app = document.getElementById("app");
   var toastEl = document.getElementById("toast");
-  var APP_VERSION = "5.0";
+  var APP_VERSION = "7.0";
 
   var memoryStorage = {};
 
@@ -88,6 +88,9 @@
     currentDrink: null,
     mixingIndex: 0,
     shareTemplate: "midnight",
+    recipeMode: "alcohol",
+    recipeServings: 1,
+    recipeLevel: "beginner",
     installPrompt: null,
     form: defaultForm()
   };
@@ -226,6 +229,21 @@
     return '<ellipse cx="' + config.garnishCx + '" cy="' + config.garnishCy + '" rx="21" ry="10" fill="none" stroke="#f0a34f" stroke-width="7" transform="rotate(20 ' + config.garnishCx + ' ' + config.garnishCy + ')" filter="url(#' + uid + '-water)"/>';
   }
 
+  function doodleSVG(shape, uid, seed, displaySize) {
+    if (displaySize === "mini") return "";
+    var stroke = 'rgba(255,248,242,.62)';
+    var accent = 'rgba(241,176,95,.65)';
+    return '<g class="doodle-group" filter="url(#' + uid + '-water)">' +
+      '<path d="M58 116 C46 106 45 88 58 83 C72 77 83 95 73 108" fill="none" stroke="' + stroke + '" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<path d="M246 128 C259 117 276 121 281 134" fill="none" stroke="' + stroke + '" stroke-width="2.5" stroke-linecap="round"/>' +
+      '<path d="M259 148 C268 141 279 143 284 153" fill="none" stroke="' + accent + '" stroke-width="2.2" stroke-linecap="round"/>' +
+      '<path d="M69 286 C80 282 92 284 102 292" fill="none" stroke="' + accent + '" stroke-width="2.2" stroke-linecap="round"/>' +
+      '<path d="M243 285 q6 -14 12 0 q-12 6 -12 0z" fill="none" stroke="' + stroke + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<path d="M86 72 l5 10 l10 5 l-10 5 l-5 10 l-5 -10 l-10 -5 l10 -5 z" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linejoin="round"/>' +
+      '<path d="M236 74 l4 8 l8 4 l-8 4 l-4 8 l-4 -8 l-8 -4 l8 -4 z" fill="none" stroke="' + accent + '" stroke-width="2" stroke-linejoin="round"/>' +
+      '</g>';
+  }
+
   function drinkVisual(drink, size) {
     var displaySize = size || "large";
     var shape = drink.glassShape || "hurricane";
@@ -236,14 +254,14 @@
 
     var shapes = {
       hurricane: {
-        bowl:"M106 66 C94 88 94 112 107 139 C92 169 88 214 99 255 C110 295 129 319 160 330 C191 319 210 295 221 255 C232 214 228 169 213 139 C226 112 226 88 214 66 C187 57 133 57 106 66 Z",
-        liquid:"M111 111 C104 133 105 151 113 169 C102 194 100 224 107 252 C116 283 133 303 160 313 C187 303 204 283 213 252 C220 224 218 194 207 169 C215 151 216 133 209 111 C183 103 137 103 111 111 Z",
-        stem:"M157 326 C158 345 158 364 157 384",
-        base:"M104 394 C123 387 198 387 216 394 C200 405 120 405 104 394 Z",
-        straw:[204,68,177,176],
-        leaf1:"M207 118 C223 104 243 105 255 118 C240 138 222 141 207 118 Z",
-        leaf2:"M188 133 C203 121 220 124 230 140 C214 153 197 151 188 133 Z",
-        garnishCx:226,garnishCy:78
+        bowl:"M112 70 C101 80 98 96 100 113 C102 134 113 151 114 170 C115 187 106 205 104 228 C100 273 121 307 160 323 C199 307 220 273 216 228 C214 205 205 187 206 170 C207 151 218 134 220 113 C222 96 219 80 208 70 C184 61 136 61 112 70 Z",
+        liquid:"M116 111 C113 128 118 143 120 160 C122 178 114 196 113 227 C111 266 129 291 160 304 C191 291 209 266 207 227 C206 196 198 178 200 160 C202 143 207 128 204 111 C182 104 138 104 116 111 Z",
+        stem:"M158 323 C158 342 158 361 158 381",
+        base:"M109 394 C130 386 190 386 211 394 C193 404 127 404 109 394 Z",
+        straw:[205,70,179,175],
+        leaf1:"M209 119 C225 105 245 106 257 120 C242 139 224 142 209 119 Z",
+        leaf2:"M191 136 C205 124 223 127 232 142 C217 154 201 153 191 136 Z",
+        garnishCx:227,garnishCy:80
       },
       goblet: {
         bowl:"M100 77 C90 116 89 163 100 220 C110 270 132 304 160 317 C188 304 210 270 220 220 C231 163 230 116 220 77 C188 66 132 66 100 77 Z",
@@ -347,6 +365,7 @@
       '<path d="M' + g.straw[0] + ' ' + g.straw[1] + ' L' + g.straw[2] + ' ' + g.straw[3] + '" stroke="url(#' + uid + '-liquid)" stroke-width="8" stroke-linecap="round"/>' +
       '<path d="M' + (g.straw[0] - 24) + ' ' + (g.straw[1] + 5) + ' L' + (g.straw[0] + 3) + ' ' + (g.straw[1] + 2) + '" stroke="#75d2df" stroke-width="7" stroke-linecap="round"/>' +
       garnishSVG(garnish, g, uid) +
+      doodleSVG(shape, uid, seed, displaySize) +
       '</svg></div>';
   }
 
@@ -495,6 +514,7 @@
       garnishColor:"#f0a34f",
       glassShape:sample.glassShape,
       garnish:sample.garnish,
+      realRecipe:createRealRecipe(emotionObjects, {glassShape:sample.glassShape,garnish:sample.garnish,desired:"保持现在",weather:"晚风"}, hashSeed(sample.name), sample.flavors, sample.name),
       createdAt:new Date().toISOString(),
       input:clone(defaultForm()),
       sourceSampleId:sample.id,
@@ -669,6 +689,193 @@
       '</section></main>';
   }
 
+  function glassLabelById(id) {
+    return (glassOptions.filter(function (option) { return option.id === id; })[0] || {label:"特调杯型"}).label;
+  }
+
+  function resolveDrinkEmotions(drink) {
+    return (drink.emotions || []).map(function (emotion) {
+      if (!emotion) return null;
+      if (typeof emotion === "string") return moodByLabel(emotion) || moodById(emotion) || null;
+      return moodById(emotion.id) || moodByLabel(emotion.label) || null;
+    }).filter(function (emotion) { return !!emotion; });
+  }
+
+  function recipeProfileForMood(moodId) {
+    var profiles = {
+      happy:{style:"Citrus Spritz", strength:"低酒精", technique:"加冰直调", ice:"块冰 8 分满", garnish:"橙片 + 薄荷", ingredients:["金酒 35ml","鲜橙汁 35ml","蜂蜜糖浆 10ml","柠檬汁 12ml","苏打水 70ml"], steps:["在杯中加入八分满块冰。","依次倒入金酒、鲜橙汁、蜂蜜糖浆和柠檬汁。","轻轻搅拌 6–8 下后补入苏打水，再轻提一次。","以橙片和薄荷装饰即可。"], pairing:"明亮轻盈，适合下班或周末第一杯。", mocktail:"无酒精版：将金酒换成冷泡伯爵茶 45ml，再补 20ml 苏打水。"},
+      hopeful:{style:"Citrus Spritz", strength:"低酒精", technique:"加冰直调", ice:"块冰 8 分满", garnish:"青提 + 薄荷", ingredients:["金酒 35ml","青提汁 30ml","蜂蜜糖浆 10ml","青柠汁 12ml","苏打水 70ml"], steps:["在杯中加入八分满块冰。","依次倒入金酒、青提汁、蜂蜜糖浆和青柠汁。","补入苏打水后轻轻搅拌，让香气保持上扬。","用青提或薄荷做装饰。"], pairing:"清爽偏果香，适合想要一点点勇气的时候。", mocktail:"无酒精版：将金酒换成白葡萄汁 40ml，整体更像轻盈汽泡饮。"},
+      calm:{style:"Tea Cooler", strength:"低酒精", technique:"加冰直调", ice:"大块冰 6–8 块", garnish:"薄荷 + 青柠片", ingredients:["金酒 30ml","冷萃茉莉茶 50ml","接骨木糖浆 10ml","青柠汁 10ml","苏打水 50ml"], steps:["在杯中放入大块冰。","加入金酒、冷萃茉莉茶、接骨木糖浆和青柠汁。","轻轻搅拌均匀，最后补入苏打水。","以薄荷和青柠片装饰。"], pairing:"花香和茶感明显，适合需要慢一点的夜晚。", mocktail:"无酒精版：去掉金酒，改为冷萃茉莉茶 80ml。"},
+      blank:{style:"Tea Cooler", strength:"无酒精/低酒精都适合", technique:"加冰直调", ice:"大块冰 6–8 块", garnish:"白桃片或薄荷", ingredients:["伏特加 25ml","白桃乌龙茶 60ml","糖浆 8ml","柠檬汁 8ml","苏打水 40ml"], steps:["杯中放满冰块。","加入伏特加、白桃乌龙茶、糖浆和柠檬汁。","补入苏打水，轻搅后即可。","用白桃片或薄荷点缀。"], pairing:"干净轻柔，适合不想要太复杂味道的时候。", mocktail:"无酒精版：去掉伏特加，额外增加 20ml 乌龙茶。"},
+      lonely:{style:"Tea Highball", strength:"中低酒精", technique:"加冰直调", ice:"长冰块或块冰", garnish:"柠檬皮", ingredients:["威士忌 35ml","乌龙茶 55ml","蜂蜜糖浆 8ml","柠檬汁 8ml","苏打水 35ml"], steps:["在高杯中装入冰块。","加入威士忌、乌龙茶、蜂蜜糖浆和柠檬汁。","轻轻搅拌，再补入苏打水。","挤一片柠檬皮后放入杯中。"], pairing:"茶感克制、尾韵温和，适合独处慢饮。", mocktail:"无酒精版：用无酒精威士忌替代，或直接改成乌龙苏打。"},
+      tired:{style:"Coffee Tonic", strength:"中低酒精", technique:"分层直调", ice:"大块冰 7 分满", garnish:"橙皮", ingredients:["深色朗姆 30ml","冷萃咖啡 45ml","糖浆 10ml","橙汁 12ml","汤力水 60ml"], steps:["杯中加入块冰后先倒入朗姆、糖浆和橙汁。","补入汤力水。","沿勺背缓缓倒入冷萃咖啡做出轻微分层。","挤入橙皮香气即可。"], pairing:"微苦、微甜、带一点醒神感。", mocktail:"无酒精版：去掉朗姆，冷萃咖啡增加到 60ml。"},
+      anxious:{style:"Grapefruit Highball", strength:"低酒精", technique:"加冰直调", ice:"块冰 8 分满", garnish:"葡萄柚皮", ingredients:["金酒 35ml","西柚汁 45ml","糖浆 8ml","柠檬汁 10ml","苏打水 50ml"], steps:["杯中装入冰块。","加入金酒、西柚汁、糖浆与柠檬汁。","补入苏打水，轻搅均匀。","用葡萄柚皮轻挤精油后放入杯中。"], pairing:"轻苦清新，适合把节奏慢下来。", mocktail:"无酒精版：用汤力水替代金酒，整体也很好喝。"},
+      irritable:{style:"Ginger Mule", strength:"中低酒精", technique:"加冰直调", ice:"块冰 8 分满", garnish:"青柠片 + 姜片", ingredients:["伏特加 35ml","青柠汁 12ml","糖浆 8ml","姜汁啤酒 90ml","黄瓜片 2 片"], steps:["杯中放入冰块和黄瓜片。","加入伏特加、青柠汁与糖浆。","补入姜汁啤酒，轻轻搅拌。","用青柠片和姜片装饰。"], pairing:"辛香明显，适合把烦躁感转成更利落的味道。", mocktail:"无酒精版：去掉伏特加，改成更多姜汁啤酒和一点苏打水。"},
+      romantic:{style:"Berry Rose Fizz", strength:"低酒精", technique:"摇和后加气泡", ice:"块冰 7 分满", garnish:"覆盆子 + 玫瑰花瓣", ingredients:["伏特加 30ml","蔓越莓汁 35ml","玫瑰糖浆 10ml","柠檬汁 10ml","苏打水 45ml"], steps:["将伏特加、蔓越莓汁、玫瑰糖浆和柠檬汁与冰块一起摇匀。","滤入装好冰块的杯中。","补入苏打水，轻轻提一次。","放上覆盆子和少量可食用玫瑰花瓣。"], pairing:"果香柔和，适合约会或心情柔软的晚上。", mocktail:"无酒精版：把伏特加换成白葡萄汁 20ml。"},
+      wronged:{style:"Berry Rose Fizz", strength:"低酒精", technique:"摇和后加气泡", ice:"块冰 7 分满", garnish:"蓝莓或覆盆子", ingredients:["金酒 30ml","蔓越莓汁 35ml","紫苏糖浆 8ml","柠檬汁 10ml","苏打水 45ml"], steps:["前四项与冰块摇匀后滤入杯中。","加入苏打水轻轻提一下。","用蓝莓或覆盆子装饰。","如果想更柔和，可在表面放半勺奶泡。"], pairing:"酸甜里带一点柔软，很适合慢慢喝。", mocktail:"无酒精版：把金酒换成冷泡洛神花茶 40ml。"},
+      excited:{style:"Tropical Fizz", strength:"中低酒精", technique:"摇和后加气泡", ice:"块冰 7 分满", garnish:"菠萝叶或柑橘片", ingredients:["白朗姆 35ml","菠萝汁 40ml","青柠汁 12ml","糖浆 8ml","气泡水 45ml"], steps:["将朗姆、菠萝汁、青柠汁和糖浆加冰摇匀。","滤入杯中加冰。","补入气泡水，轻轻搅拌。","用菠萝叶或柑橘片装饰。"], pairing:"气泡感明显，适合高能量时段。", mocktail:"无酒精版：去掉朗姆，增加 20ml 菠萝汁。"},
+      chaotic:{style:"Tropical Fizz", strength:"中低酒精", technique:"摇和后加气泡", ice:"碎冰或块冰", garnish:"青柠片", ingredients:["龙舌兰 35ml","菠萝汁 35ml","青柠汁 15ml","龙舌兰糖浆 8ml","姜汁汽水 45ml"], steps:["前四项与冰块摇匀。","滤入装好冰块的杯中。","补入姜汁汽水，轻轻搅匀。","最后放上青柠片。"], pairing:"香气活跃、层次多，适合情绪很多线程的时候。", mocktail:"无酒精版：去掉龙舌兰，改用柠檬苏打和更多菠萝汁。"}
+    };
+    return profiles[moodId] || profiles.blank;
+  }
+
+  function createRealRecipe(selected, form, seed, flavors, drinkName) {
+    var primary = selected[0] || moodById("blank");
+    var secondary = selected[1] || null;
+    var profile = recipeProfileForMood(primary.id);
+    var garnishMap = {mint:"薄荷叶", citrus:"柑橘片", berry:"浆果串", none:"不额外装饰"};
+    var glassName = glassLabelById((form && form.glassShape) || "hurricane");
+    var ingredients = profile.ingredients.slice();
+    var steps = profile.steps.slice();
+    var tipParts = [];
+    if (secondary) {
+      if (["happy","excited","hopeful"].indexOf(secondary.id) >= 0) {
+        ingredients.push("额外气泡水 20ml（让口感更轻快）");
+        tipParts.push("如果想更轻盈，可以在最后多补一点气泡水。");
+      } else if (["calm","blank","lonely"].indexOf(secondary.id) >= 0) {
+        ingredients.push("冷泡茶 15ml（让尾韵更柔和）");
+        tipParts.push("加入一点冷泡茶，风味会更安静。 ");
+      } else if (["romantic","wronged"].indexOf(secondary.id) >= 0) {
+        ingredients.push("莓果糖浆 5ml（增加果香层次）");
+      } else if (["anxious","irritable"].indexOf(secondary.id) >= 0) {
+        ingredients.push("额外柠檬汁 5ml（让收口更干净）");
+      } else if (secondary.id === "tired") {
+        ingredients.push("冷萃咖啡 15ml（做更明显的醒神尾韵）");
+      }
+    }
+    if (form && (form.weather === "小雨" || form.weather === "暴雨")) {
+      tipParts.push("下雨天调制时，可以在杯沿抹少许海盐，让味道更立体。");
+    }
+    if (form && form.desired === "清醒一点") {
+      tipParts.push("想更清醒，可减少糖浆 2ml 并增加 1 片柠檬皮。 ");
+    } else if (form && form.desired === "被安慰") {
+      tipParts.push("想更柔和，可以把酒体整体减 5ml，并增加 5ml 糖浆。 ");
+    } else if (form && form.desired === "开心一点") {
+      tipParts.push("如果想更明亮，优先使用新鲜柑橘汁而不是浓缩汁。 ");
+    }
+    tipParts.push("推荐杯型：" + glassName + "；装饰可按你的选择改为“" + (garnishMap[(form && form.garnish) || "mint"] || "薄荷叶") + "”。");
+    return {
+      primaryMoodId:primary.id,
+      title:(drinkName || "今日特调") + " · 现实尝试版",
+      style:profile.style,
+      strength:profile.strength,
+      technique:profile.technique,
+      ice:profile.ice,
+      glass:glassName,
+      ingredients:ingredients,
+      steps:steps,
+      garnish:profile.garnish,
+      pairing:profile.pairing,
+      mocktail:profile.mocktail,
+      note:tipParts.join("")
+    };
+  }
+
+  function ensureRealRecipe(drink) {
+    if (drink && drink.realRecipe) return drink.realRecipe;
+    return createRealRecipe(resolveDrinkEmotions(drink || {}), (drink && drink.input) || defaultForm(), hashSeed((drink && drink.name || "") + (drink && drink.createdAt || "")), (drink && drink.flavors) || [], (drink && drink.name) || "今日特调");
+  }
+
+  function zeroProofVariant(primaryMoodId) {
+    var groups = {
+      bright:{ingredients:["冷泡伯爵茶 45ml","鲜橙汁或青提汁 40ml","蜂蜜糖浆 10ml","柠檬汁 12ml","苏打水 80ml"],steps:["杯中加入八分满块冰。","加入冷泡茶、果汁、蜂蜜糖浆和柠檬汁。","补入苏打水，轻轻搅拌 5–6 下。","以柑橘片或薄荷装饰。"]},
+      tea:{ingredients:["冷萃茉莉茶或白桃乌龙 80ml","接骨木糖浆 10ml","青柠汁 10ml","苏打水 60ml"],steps:["杯中放入大块冰。","加入冷萃茶、糖浆和青柠汁。","补入苏打水后轻提一次。","用薄荷或白桃片装饰。"]},
+      coffee:{ingredients:["冷萃咖啡 60ml","橙汁 15ml","糖浆 10ml","汤力水 90ml"],steps:["杯中加入块冰。","加入橙汁和糖浆，再补入汤力水。","沿勺背缓缓倒入冷萃咖啡。","挤一片橙皮释放香气。"]},
+      citrus:{ingredients:["西柚汁 55ml","柠檬汁 10ml","糖浆 8ml","汤力水 90ml"],steps:["杯中装入冰块。","加入西柚汁、柠檬汁和糖浆。","补入汤力水并轻轻搅拌。","用西柚皮装饰。"]},
+      ginger:{ingredients:["青柠汁 15ml","糖浆 8ml","姜汁啤酒 110ml","黄瓜片 2 片","苏打水 20ml"],steps:["杯中加入冰块和黄瓜片。","加入青柠汁与糖浆。","补入姜汁啤酒和苏打水。","轻搅后以青柠片装饰。"]},
+      berry:{ingredients:["冷泡洛神花茶 45ml","蔓越莓汁 45ml","玫瑰糖浆 10ml","柠檬汁 10ml","苏打水 50ml"],steps:["前四项与冰块一起摇匀。","滤入装有冰块的杯中。","补入苏打水。","用莓果或可食用花瓣装饰。"]},
+      tropical:{ingredients:["菠萝汁 65ml","青柠汁 15ml","糖浆 8ml","姜汁汽水 65ml","苏打水 30ml"],steps:["菠萝汁、青柠汁和糖浆与冰块摇匀。","滤入装有冰块的杯中。","补入姜汁汽水与苏打水。","用青柠片或菠萝叶装饰。"]}
+    };
+    if (["happy","hopeful"].indexOf(primaryMoodId) >= 0) return groups.bright;
+    if (["calm","blank","lonely"].indexOf(primaryMoodId) >= 0) return groups.tea;
+    if (primaryMoodId === "tired") return groups.coffee;
+    if (primaryMoodId === "anxious") return groups.citrus;
+    if (primaryMoodId === "irritable") return groups.ginger;
+    if (["romantic","wronged"].indexOf(primaryMoodId) >= 0) return groups.berry;
+    return groups.tropical;
+  }
+
+  function normalizeRealRecipe(realRecipe) {
+    var recipe = realRecipe || {};
+    var zero = zeroProofVariant(recipe.primaryMoodId || "blank");
+    return {
+      title:recipe.title || "今日特调 · 现实尝试版",
+      style:recipe.style || "House Special",
+      strength:recipe.strength || "中低酒精",
+      technique:recipe.technique || "加冰直调",
+      ice:recipe.ice || "块冰 8 分满",
+      glass:recipe.glass || "飓风杯",
+      garnish:recipe.garnish || "柑橘片或薄荷",
+      pairing:recipe.pairing || "适合慢慢饮用。",
+      mocktail:recipe.mocktail || "可以使用茶、果汁与苏打水替代基酒。",
+      note:recipe.note || "先从较少糖量开始，再按口味调整。",
+      primaryMoodId:recipe.primaryMoodId || "blank",
+      alcohol:{ingredients:(recipe.ingredients || []).slice(),steps:(recipe.steps || []).slice()},
+      zero:{ingredients:zero.ingredients.slice(),steps:zero.steps.slice()}
+    };
+  }
+
+  function scaleIngredientText(text, servings) {
+    return String(text).replace(/(\d+(?:\.\d+)?)\s*ml/g, function (_, value) {
+      var amount = Number(value) * servings;
+      var formatted = Math.round(amount * 10) / 10;
+      return formatted + "ml";
+    });
+  }
+
+  function currentRecipeVariant(recipe) {
+    var normalized = normalizeRealRecipe(recipe);
+    return state.recipeMode === "zero" ? normalized.zero : normalized.alcohol;
+  }
+
+  function recipeText(realRecipe) {
+    var normalized = normalizeRealRecipe(realRecipe);
+    var variant = currentRecipeVariant(normalized);
+    var title = normalized.title + "（" + (state.recipeMode === "zero" ? "无酒精版" : "酒精版") + " · " + state.recipeServings + "杯）";
+    return [title,"", "配方："].concat(variant.ingredients.map(function (item) { return "- " + scaleIngredientText(item,state.recipeServings); }),["","做法："],variant.steps.map(function (item,index) { return (index + 1) + ". " + item; }),["","杯型：" + normalized.glass,"装饰：" + normalized.garnish,"提示：" + normalized.note]).join("\n");
+  }
+
+  function updateRecipeCard() {
+    var drink = state.detailDrink || state.currentDrink;
+    var card = document.querySelector(".real-recipe-card");
+    if (!drink || !card) return;
+    card.outerHTML = renderRealRecipeCard(ensureRealRecipe(drink));
+  }
+
+  function renderRealRecipeCard(realRecipe) {
+    if (!realRecipe) return "";
+    var normalized = normalizeRealRecipe(realRecipe);
+    var variant = currentRecipeVariant(normalized);
+    var levelTip = state.recipeLevel === "beginner" ?
+      "新手建议：所有材料先冷藏，按顺序量取；补气泡饮料后只轻搅，不要用力摇。" :
+      "进阶建议：杯具预冷；摇和类配方控制在 10–12 秒，并根据冰块大小调整稀释度。";
+    return '<article class="card real-recipe-card">' +
+      '<div class="menu-stamp">HOUSE RECIPE · V7</div>' +
+      '<div class="real-recipe-head"><div><span class="eyebrow">现实调酒配方</span><h3>' + escapeHTML(normalized.title) + '</h3></div><span class="doodle-badge">✎ bar note</span></div>' +
+      '<div class="recipe-control-row">' +
+        '<div class="segmented-control"><button class="segment ' + (state.recipeMode === "alcohol" ? "active" : "") + '" data-action="recipe-mode" data-value="alcohol">酒精版</button>' +
+        '<button class="segment ' + (state.recipeMode === "zero" ? "active" : "") + '" data-action="recipe-mode" data-value="zero">无酒精版</button></div>' +
+        '<div class="segmented-control compact"><button class="segment ' + (state.recipeServings === 1 ? "active" : "") + '" data-action="recipe-serving" data-value="1">1杯</button>' +
+        '<button class="segment ' + (state.recipeServings === 2 ? "active" : "") + '" data-action="recipe-serving" data-value="2">2杯</button>' +
+        '<button class="segment ' + (state.recipeServings === 4 ? "active" : "") + '" data-action="recipe-serving" data-value="4">4杯</button></div>' +
+      '</div>' +
+      '<div class="real-meta-grid">' +
+      '<div class="metric"><span class="small muted">风格</span><strong>' + escapeHTML(normalized.style) + '</strong></div>' +
+      '<div class="metric"><span class="small muted">推荐杯型</span><strong>' + escapeHTML(normalized.glass) + '</strong></div>' +
+      '<div class="metric"><span class="small muted">调制方式</span><strong>' + escapeHTML(normalized.technique) + '</strong></div>' +
+      '<div class="metric"><span class="small muted">冰型 / 酒感</span><strong>' + escapeHTML(normalized.ice + ' · ' + (state.recipeMode === "zero" ? "0% 酒精" : normalized.strength)) + '</strong></div>' +
+      '</div>' +
+      '<div class="recipe-level-row"><span class="eyebrow">难度提示</span><div class="segmented-control compact"><button class="segment ' + (state.recipeLevel === "beginner" ? "active" : "") + '" data-action="recipe-level" data-value="beginner">新手</button><button class="segment ' + (state.recipeLevel === "advanced" ? "active" : "") + '" data-action="recipe-level" data-value="advanced">进阶</button></div></div>' +
+      '<div class="recipe-columns">' +
+      '<div><span class="eyebrow">配方清单 · 点按勾选</span><ul class="ingredient-list checklist">' + variant.ingredients.map(function (item,index) { return '<li data-action="toggle-ingredient" data-index="' + index + '"><span class="check-box">✓</span><span>' + escapeHTML(scaleIngredientText(item,state.recipeServings)) + '</span></li>'; }).join("") + '</ul></div>' +
+      '<div><span class="eyebrow">做法</span><ol class="step-list">' + variant.steps.map(function (item) { return '<li>' + escapeHTML(item) + '</li>'; }).join("") + '</ol></div>' +
+      '</div>' +
+      '<div class="recipe-tip"><b>装饰建议：</b>' + escapeHTML(normalized.garnish) + '<br><b>风味提示：</b>' + escapeHTML(normalized.pairing) + '<br><b>' + (state.recipeMode === "zero" ? "无酒精说明" : "替代建议") + '：</b>' + escapeHTML(state.recipeMode === "zero" ? "这版不含酒精，适合直接按配方尝试。" : normalized.mocktail) + '<br><b>调酒小纸条：</b>' + escapeHTML(normalized.note) + '<br><b>操作提示：</b>' + escapeHTML(levelTip) + '</div>' +
+      '<div class="recipe-action-row"><button class="secondary-btn" data-action="copy-recipe">复制配方</button><button class="secondary-btn" data-action="reset-checklist">清空勾选</button></div>' +
+      '<p class="responsible-note">仅供达到当地法定饮酒年龄的成年人参考。请适量饮酒；不饮酒时优先选择无酒精版。</p>' +
+      '</article>';
+  }
+
   function generateDrink() {
     var selected = state.form.emotions.map(moodById);
     if (!selected.length) selected = [moodById("blank")];
@@ -755,6 +962,7 @@
       c2:selected[1] ? selected[1].c2 : selected[0].c2,
       glassShape:state.form.glassShape,
       garnish:state.form.garnish,
+      realRecipe:createRealRecipe(selected, state.form, effectiveSeed, flavors, name),
       createdAt:new Date().toISOString(),
       input:clone(state.form)
     };
@@ -762,7 +970,8 @@
 
   function renderResult(drink, detailMode) {
     if (!drink) return "";
-    var glassLabel = (glassOptions.filter(function (option) { return option.id === drink.glassShape; })[0] || {label:"特调杯型"}).label;
+    var glassLabel = glassLabelById(drink.glassShape);
+    var realRecipe = ensureRealRecipe(drink);
     var content = '<div class="result-screen screen"><header class="topbar">' +
       '<button class="back-btn" data-action="' + (detailMode ? "close-detail" : "result-home") + '">‹</button>' +
       '<span class="eyebrow">YOUR WATERCOLOR SPECIAL</span><button class="icon-btn" data-action="share-drink">↗</button></header>' +
@@ -780,6 +989,7 @@
       }).join("") + '</article>' +
       '<article class="card note-card"><span class="eyebrow">调酒师品鉴</span><p>' +
       escapeHTML(drink.tastingNote) + '</p></article>' +
+      renderRealRecipeCard(realRecipe) +
       '<article class="card metrics-card"><span class="eyebrow">饮品属性</span><div class="metrics-grid">' +
       metric("情绪浓度",drink.metrics.intensity + "%") + metric("精神浓度",drink.metrics.spirit + "%") +
       metric("气泡指数",drink.metrics.bubble + "%") + metric("回甘时间",drink.metrics.aftertaste) +
@@ -880,6 +1090,9 @@
         window.clearInterval(timer);
         window.setTimeout(function () {
           state.currentDrink = generateDrink();
+          state.recipeMode = "alcohol";
+          state.recipeServings = 1;
+          state.recipeLevel = "beginner";
           state.view = "result";
           render();
         }, 700);
@@ -1120,6 +1333,19 @@
     showToast("酒窖备份已导出");
   }
 
+  function fallbackCopy(text) {
+    var area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly","");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    try { document.execCommand("copy"); showToast("配方已复制"); }
+    catch (error) { showToast("长按配方文字进行复制"); }
+    area.remove();
+  }
+
   function handleClick(event) {
     var target = event.target.closest("[data-action]");
     if (!target) {
@@ -1182,7 +1408,7 @@
     if (action === "open-drink") {
       var id = target.getAttribute("data-id");
       state.detailDrink = getSavedDrinks().filter(function (drink) { return String(drink.id) === String(id); })[0];
-      if (state.detailDrink) renderDetailOverlay();
+      if (state.detailDrink) { state.recipeMode = "alcohol"; state.recipeServings = 1; state.recipeLevel = "beginner"; renderDetailOverlay(); }
       return;
     }
 
@@ -1208,6 +1434,7 @@
       var sample = findSample(target.getAttribute("data-id"));
       if (sample) {
         state.detailDrink = sampleAsDrink(sample);
+        state.recipeMode = "alcohol"; state.recipeServings = 1; state.recipeLevel = "beginner";
         renderDetailOverlay();
       }
       return;
@@ -1413,6 +1640,43 @@
       return;
     }
 
+    if (action === "recipe-mode") {
+      state.recipeMode = target.getAttribute("data-value") === "zero" ? "zero" : "alcohol";
+      updateRecipeCard();
+      return;
+    }
+
+    if (action === "recipe-serving") {
+      state.recipeServings = Number(target.getAttribute("data-value")) || 1;
+      updateRecipeCard();
+      return;
+    }
+
+    if (action === "recipe-level") {
+      state.recipeLevel = target.getAttribute("data-value") === "advanced" ? "advanced" : "beginner";
+      updateRecipeCard();
+      return;
+    }
+
+    if (action === "toggle-ingredient") {
+      target.classList.toggle("checked");
+      return;
+    }
+
+    if (action === "reset-checklist") {
+      Array.prototype.forEach.call(document.querySelectorAll(".ingredient-list.checklist li"), function (item) { item.classList.remove("checked"); });
+      return;
+    }
+
+    if (action === "copy-recipe") {
+      var recipeDrink = state.detailDrink || state.currentDrink;
+      var copyText = recipeText(ensureRealRecipe(recipeDrink));
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(copyText).then(function () { showToast("配方已复制"); }).catch(function () { fallbackCopy(copyText); });
+      } else fallbackCopy(copyText);
+      return;
+    }
+
     if (action === "close-share") {
       var share = document.getElementById("shareModal");
       if (share) share.remove();
@@ -1469,7 +1733,7 @@
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("./sw.js?v=5").catch(function () {});
+      navigator.serviceWorker.register("./sw.js?v=7").catch(function () {});
     });
   }
 
