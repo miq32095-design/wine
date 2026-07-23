@@ -35,6 +35,20 @@
           "value": "public, max-age=0, must-revalidate"
         }
       ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
     }
-  ]
+  ],
+  "functions": {
+    "api/generate-drink.js": {
+      "maxDuration": 20
+    }
+  }
 }

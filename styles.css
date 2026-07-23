@@ -1048,3 +1048,32 @@ input[type="range"] { width: 100%; accent-color: var(--rose); }
   .segmented-control { width: 100%; }
   .recipe-action-row { flex-direction: column; }
 }
+
+
+/* V8 AI Bartender */
+.ai-mixing-hint {
+  max-width: 300px;
+  margin: 9px auto 0;
+  color: rgba(255,248,242,.45);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.ai-profile-card { padding: 18px; }
+.ai-status-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  background: rgba(255,248,242,.24);
+  box-shadow: 0 0 0 5px rgba(255,248,242,.04);
+}
+.ai-status-dot.status-online { background: #75d2a4; box-shadow: 0 0 18px rgba(117,210,164,.55); }
+.ai-status-dot.status-offline,
+.ai-status-dot.status-error { background: #ef9a74; box-shadow: 0 0 18px rgba(239,154,116,.42); }
+.ai-status-dot.status-checking { animation: aiPulse 1.2s ease-in-out infinite; }
+@keyframes aiPulse { 50% { transform: scale(.72); opacity: .48; } }
+.preference-block { margin-top: 18px; }
+.preference-chips { margin-top: 10px; }
+.preference-segments { margin-top: 10px; grid-template-columns: repeat(3,1fr); }
+.preference-input { margin-top: 16px; }
+.preference-input input { font-size: 13px; }
+.result-title .eyebrow { letter-spacing: .11em; }

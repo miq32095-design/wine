@@ -3,7 +3,7 @@
 
   var app = document.getElementById("app");
   var toastEl = document.getElementById("toast");
-  var APP_VERSION = "7.1";
+  var APP_VERSION = "8.1";
 
   var memoryStorage = {};
 
@@ -31,7 +31,9 @@
   var STORAGE = {
     onboarded: "moodMixerOnboarded",
     drinks: "moodMixerDrinks",
-    favorites: "moodMixerFavorites"
+    favorites: "moodMixerFavorites",
+    preferences: "moodMixerPreferences",
+    aiUsage: "moodMixerAIUsage"
   };
 
   var moods = [
@@ -65,6 +67,9 @@
     { id:"none", label:"不加装饰", icon:"—", wash:"rgba(220,226,231,.16)" }
   ];
 
+  var tasteOptions = ["清爽", "酸感", "微甜", "微苦", "果香", "茶感", "咖啡感"];
+  var AI_DAILY_LIMIT = 8;
+
   var sampleDrinks = [
     { id:"sample-1", category:"今日特调", name:"会议结束后的自由", subtitle:"献给关掉摄像头之后的第一口空气。", emotions:["疲惫","开心"], flavors:["柠檬","气泡","晚风"], c1:"#f0a45b", c2:"#876fd5", glassShape:"highball", garnish:"citrus" },
     { id:"sample-2", category:"打工人专区", name:"已读不回莫吉托", subtitle:"消息留在屏幕里，薄荷先替你降温。", emotions:["焦虑","烦躁"], flavors:["薄荷","青柠","微苦"], c1:"#7bd2ae", c2:"#d7c86a", glassShape:"highball", garnish:"mint" },
@@ -92,6 +97,10 @@
     recipeServings: 1,
     recipeLevel: "beginner",
     installPrompt: null,
+    aiStatus: "unknown",
+    aiModel: "qwen3.7-plus",
+    aiSource: "local",
+    preferences: getPreferences(),
     form: defaultForm()
   };
 
@@ -110,6 +119,58 @@
       glassShape: "hurricane",
       garnish: "mint"
     };
+  }
+
+  function defaultPreferences() {
+    return { tastes:["清爽"], alcohol:"both", avoid:"" };
+  }
+
+  function getPreferences() {
+    try {
+      var parsed = JSON.parse(safeStorageGet(STORAGE.preferences) || "null");
+      if (!parsed || typeof parsed !== "object") return defaultPreferences();
+      return {
+        tastes:Array.isArray(parsed.tastes) ? parsed.tastes.filter(function (item) { return tasteOptions.indexOf(item) >= 0; }).slice(0,4) : ["清爽"],
+        alcohol:["both","low","zero"].indexOf(parsed.alcohol) >= 0 ? parsed.alcohol : "both",
+        avoid:String(parsed.avoid || "").slice(0,100)
+      };
+    } catch (error) {
+      return defaultPreferences();
+    }
+  }
+
+  function savePreferences() {
+    safeStorageSet(STORAGE.preferences, JSON.stringify(state.preferences));
+  }
+
+  function todayKey() {
+    var now = new Date();
+    return now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2,"0") + "-" + String(now.getDate()).padStart(2,"0");
+  }
+
+  function getAIUsage() {
+    try {
+      var value = JSON.parse(safeStorageGet(STORAGE.aiUsage) || "null");
+      if (!value || value.date !== todayKey()) return {date:todayKey(),count:0};
+      return {date:value.date,count:Number(value.count) || 0};
+    } catch (error) {
+      return {date:todayKey(),count:0};
+    }
+  }
+
+  function markAIUsage() {
+    var usage = getAIUsage();
+    usage.count += 1;
+    safeStorageSet(STORAGE.aiUsage, JSON.stringify(usage));
+    return usage;
+  }
+
+  function aiRemaining() {
+    return Math.max(0, AI_DAILY_LIMIT - getAIUsage().count);
+  }
+
+  function aiCanRun() {
+    return state.aiStatus !== "offline" && aiRemaining() > 0 && navigator.onLine !== false;
   }
 
   function clone(value) {
@@ -376,7 +437,7 @@
   function onboardingView() {
     var pages = [
       {
-        title:"把今天的情绪，调成一杯水彩特调。",
+        title:"把今天的情绪，调成一杯专属特调。",
         text:"无需解释得很完整。选择一些感受，让颜色、冰块和余味替你说话。",
         visual:drinkVisual({c1:"#ef8aa7",c2:"#65ccd7",glassShape:"hurricane",garnish:"mint"},"hero")
       },
@@ -392,7 +453,7 @@
       },
       {
         title:"收藏每一个版本的自己。",
-        text:"每一杯都会进入情绪酒窖，慢慢长成你的个人水彩酒单。",
+        text:"每一杯都会进入情绪酒窖，慢慢长成你的个人情绪酒单。",
         visual:'<article class="card month-card" style="width:92%;text-align:left">' +
           '<span class="eyebrow">THIS MONTH</span><h2 style="margin-top:9px">慢慢融化的薄荷冰</h2>' +
           '<p class="muted">偶尔焦虑，偶尔想逃跑，但仍然保留着很轻的甜。</p></article>'
@@ -502,7 +563,7 @@
       id:"fav-" + sample.id,
       name:sample.name,
       subtitle:sample.subtitle,
-      tastingNote:"这是一杯来自公共酒单的水彩配方。你可以把它作为起点，再加入属于自己的情绪。",
+      tastingNote:"这是一杯来自公共酒单的情绪配方。你可以把它作为起点，再加入属于自己的情绪。",
       flavors:sample.flavors,
       emotions:emotionObjects,
       recipe:emotionObjects.map(function (emotion, index) {
@@ -562,21 +623,63 @@
 
     return '<header class="topbar"><span class="eyebrow">PROFILE · V' + APP_VERSION + '</span></header>' +
       '<section class="profile-head"><div class="profile-avatar">M</div><h2 style="margin-bottom:4px">今晚也在营业</h2>' +
-      '<p class="muted small">私人水彩情绪调酒师</p></section>' +
+      '<p class="muted small">私人情绪调酒师</p></section>' +
       '<div class="stats"><div class="card stat"><strong>' + saved.length + '</strong><span class="small muted">已调饮品</span></div>' +
       '<div class="card stat"><strong>' + topEmotion + '</strong><span class="small muted">常见情绪</span></div>' +
       '<div class="card stat"><strong>' + averageEnergy + '%</strong><span class="small muted">平均电量</span></div></div>' +
-      '<section class="section"><article class="card month-card"><span class="eyebrow">你的本月水彩酒单</span>' +
+      '<section class="section"><article class="card month-card"><span class="eyebrow">你的本月情绪酒单</span>' +
       '<h2 style="margin-top:9px">慢慢融化的薄荷冰</h2><p class="muted">' +
       (saved.length ? "这个月的你偶尔疲惫，偶尔想逃跑，但每一次记录都留下了很轻的回甘。" :
         "还没有足够的配方。调制几杯之后，这里会长出属于你的月度风味。") +
       '</p></article></section>' +
+      aiPreferenceSection() +
       '<section class="section">' +
       settingRow("安装到桌面","把网页作为手机 App 使用","install-app", state.installPrompt ? "安装" : "方法") +
       settingRow("导出情绪酒窖","保存为 JSON 文件，方便备份","export-data","导出") +
       settingRow("重新查看引导","再次浏览产品介绍","reset-onboarding","重看") +
       settingRow("清空本地数据","删除手机上的饮品与收藏","clear-data","清空") +
       '</section>';
+  }
+
+  function aiStatusLabel() {
+    if (state.aiStatus === "online") return "已连接 · " + state.aiModel;
+    if (state.aiStatus === "offline") return "尚未配置 · 使用本地配方";
+    if (state.aiStatus === "error") return "连接异常 · 自动回退本地";
+    return "正在检测 AI 服务…";
+  }
+
+  function alcoholPreferenceLabel(value) {
+    return {both:"都可以",low:"低酒精优先",zero:"只生成无酒精"}[value] || "都可以";
+  }
+
+  function aiPreferenceSection() {
+    return '<section class="section"><article class="card ai-profile-card">' +
+      '<div class="section-title"><div><span class="eyebrow">AI BARTENDER</span><h3>千问调酒师</h3></div><span class="ai-status-dot status-' + state.aiStatus + '"></span></div>' +
+      '<p class="muted small">' + escapeHTML(aiStatusLabel()) + ' · 今日剩余 ' + aiRemaining() + ' 次 AI 调制</p>' +
+      '<div class="preference-block"><span class="eyebrow">偏好风味 · 最多四项</span><div class="quick-chips preference-chips">' +
+      tasteOptions.map(function (taste) { return '<button class="chip ' + (state.preferences.tastes.indexOf(taste) >= 0 ? 'active' : '') + '" data-action="toggle-taste" data-value="' + taste + '">' + taste + '</button>'; }).join('') +
+      '</div></div>' +
+      '<div class="preference-block"><span class="eyebrow">酒精偏好</span><div class="segmented-control preference-segments">' +
+      ['both','low','zero'].map(function (value) { return '<button class="segment ' + (state.preferences.alcohol === value ? 'active' : '') + '" data-action="set-alcohol-pref" data-value="' + value + '">' + alcoholPreferenceLabel(value) + '</button>'; }).join('') +
+      '</div></div>' +
+      '<div class="card input-card preference-input"><input id="avoidIngredients" value="' + escapeHTML(state.preferences.avoid) + '" placeholder="不喜欢或需要避开的材料，例如：咖啡因、乳制品" /></div>' +
+      '<p class="small muted">偏好只用于生成配方，不会上传到其他页面公开展示。</p>' +
+      '</article></section>';
+  }
+
+  function checkAIStatus() {
+    if (state.aiStatus === "checking") return;
+    state.aiStatus = "checking";
+    fetch("./api/generate-drink", {headers:{"Accept":"application/json"}})
+      .then(function (response) { return response.json(); })
+      .then(function (payload) {
+        state.aiStatus = payload && payload.configured ? "online" : "offline";
+        state.aiModel = payload && payload.model ? payload.model : "qwen3.7-plus";
+      })
+      .catch(function () { state.aiStatus = "error"; })
+      .finally(function () {
+        if (state.view === "main" && state.activeTab === "profile") renderMain();
+      });
   }
 
   function settingRow(title, description, action, buttonText) {
@@ -593,6 +696,7 @@
     if (state.activeTab === "profile") content = profileView();
     app.innerHTML = '<main class="app-shell"><div class="screen">' + content + '</div></main>' + nav(state.activeTab);
     if (state.detailDrink) renderDetailOverlay();
+    if (state.activeTab === "profile" && state.aiStatus === "unknown") window.setTimeout(checkAIStatus, 0);
   }
 
   function renderMix() {
@@ -685,7 +789,7 @@
       '<i class="paint-drop d1" style="--drop:' + mood.c1 + '"></i>' +
       '<i class="paint-drop d2" style="--drop:' + mood.c2 + '"></i>' +
       '<i class="paint-drop d3" style="--drop:#f2b064"></i></div>' +
-      '<h2>正在晕染今天的情绪</h2><p class="mixing-message" id="mixingMessage">正在提取今天的颜色……</p>' +
+      '<h2>AI 调酒师正在理解今天</h2><p class="mixing-message" id="mixingMessage">正在提取今天的颜色……</p><p class="ai-mixing-hint">连接异常时会自动使用本地配方，不会中断调制。</p>' +
       '</section></main>';
   }
 
@@ -810,8 +914,14 @@
       mocktail:recipe.mocktail || "可以使用茶、果汁与苏打水替代基酒。",
       note:recipe.note || "先从较少糖量开始，再按口味调整。",
       primaryMoodId:recipe.primaryMoodId || "blank",
-      alcohol:{ingredients:(recipe.ingredients || []).slice(),steps:(recipe.steps || []).slice()},
-      zero:{ingredients:zero.ingredients.slice(),steps:zero.steps.slice()}
+      alcohol:{
+        ingredients:((recipe.alcohol && recipe.alcohol.ingredients) || recipe.ingredients || []).slice(),
+        steps:((recipe.alcohol && recipe.alcohol.steps) || recipe.steps || []).slice()
+      },
+      zero:{
+        ingredients:((recipe.zero && recipe.zero.ingredients) || zero.ingredients).slice(),
+        steps:((recipe.zero && recipe.zero.steps) || zero.steps).slice()
+      }
     };
   }
 
@@ -850,7 +960,7 @@
       "新手建议：所有材料先冷藏，按顺序量取；补气泡饮料后只轻搅，不要用力摇。" :
       "进阶建议：杯具预冷；摇和类配方控制在 10–12 秒，并根据冰块大小调整稀释度。";
     return '<article class="card real-recipe-card">' +
-      '<div class="menu-stamp">HOUSE RECIPE · V7</div>' +
+      '<div class="menu-stamp">HOUSE RECIPE · V8</div>' +
       '<div class="real-recipe-head"><div><span class="eyebrow">现实调酒配方</span><h3>' + escapeHTML(normalized.title) + '</h3></div><span class="doodle-badge">✎ bar note</span></div>' +
       '<div class="recipe-control-row">' +
         '<div class="segmented-control"><button class="segment ' + (state.recipeMode === "alcohol" ? "active" : "") + '" data-action="recipe-mode" data-value="alcohol">酒精版</button>' +
@@ -874,6 +984,79 @@
       '<div class="recipe-action-row"><button class="secondary-btn" data-action="copy-recipe">复制配方</button><button class="secondary-btn" data-action="reset-checklist">清空勾选</button></div>' +
       '<p class="responsible-note">仅供达到当地法定饮酒年龄的成年人参考。请适量饮酒；不饮酒时优先选择无酒精版。</p>' +
       '</article>';
+  }
+
+  function buildAIRequestPayload() {
+    var selected = state.form.emotions.map(moodById);
+    if (!selected.length) selected = [moodById("blank")];
+    return {
+      emotions:selected.map(function (mood) { return {id:mood.id,label:mood.label,flavors:mood.flavors}; }),
+      customMood:state.form.customMood,
+      intensity:state.form.intensity,
+      contexts:state.form.contexts,
+      note:state.form.note,
+      energy:state.form.energy,
+      weather:state.form.weather,
+      desired:state.form.desired,
+      glassShape:state.form.glassShape,
+      garnish:state.form.garnish,
+      primaryColor:selected[0].c1,
+      secondaryColor:selected[1] ? selected[1].c2 : selected[0].c2,
+      preferences:clone(state.preferences)
+    };
+  }
+
+  function applyAIResult(localDrink, payload, model) {
+    var data = payload || {};
+    var result = clone(localDrink);
+    result.name = data.name || result.name;
+    result.subtitle = data.subtitle || result.subtitle;
+    result.tastingNote = data.tastingNote || result.tastingNote;
+    if (Array.isArray(data.flavors) && data.flavors.length) result.flavors = data.flavors.slice(0,5);
+    if (Array.isArray(data.emotionalRecipe) && data.emotionalRecipe.length) result.recipe = data.emotionalRecipe;
+    if (data.visual) {
+      result.c1 = data.visual.primaryColor || result.c1;
+      result.c2 = data.visual.secondaryColor || result.c2;
+      result.glassShape = data.visual.glassShape || result.glassShape;
+      result.garnish = data.visual.garnish || result.garnish;
+    }
+    if (data.metrics) {
+      result.metrics.spirit = Number(data.metrics.spirit) || result.metrics.spirit;
+      result.metrics.bubble = Number(data.metrics.bubble) || result.metrics.bubble;
+      result.metrics.aftertaste = data.metrics.aftertaste || result.metrics.aftertaste;
+      result.metrics.setting = data.metrics.setting || result.metrics.setting;
+    }
+    if (data.realRecipe) result.realRecipe = data.realRecipe;
+    result.aiGenerated = true;
+    result.aiModel = model || "qwen3.7-plus";
+    result.aiGeneratedAt = new Date().toISOString();
+    return result;
+  }
+
+  function requestAIDrink() {
+    if (!aiCanRun()) return Promise.resolve({ok:false,code:aiRemaining() <= 0 ? "LIMIT" : "OFFLINE"});
+    var controller = new AbortController();
+    var timer = window.setTimeout(function () { controller.abort(); }, 18000);
+    return fetch("./api/generate-drink", {
+      method:"POST",
+      headers:{"Content-Type":"application/json","Accept":"application/json"},
+      body:JSON.stringify(buildAIRequestPayload()),
+      signal:controller.signal
+    }).then(function (response) {
+      return response.json().then(function (payload) {
+        if (!response.ok || !payload.ok) {
+          if (payload && payload.code === "AI_NOT_CONFIGURED") state.aiStatus = "offline";
+          return {ok:false,code:(payload && payload.code) || "FAILED",message:(payload && payload.message) || "AI 生成失败"};
+        }
+        markAIUsage();
+        state.aiStatus = "online";
+        state.aiModel = payload.model || state.aiModel;
+        return payload;
+      });
+    }).catch(function (error) {
+      if (error && error.name === "AbortError") return {ok:false,code:"TIMEOUT",message:"AI 请求超时"};
+      return {ok:false,code:"FAILED",message:error && error.message ? error.message : "AI 生成失败"};
+    }).finally(function () { window.clearTimeout(timer); });
   }
 
   function generateDrink() {
@@ -976,7 +1159,7 @@
       '<button class="back-btn" data-action="' + (detailMode ? "close-detail" : "result-home") + '">‹</button>' +
       '<span class="eyebrow">YOUR WATERCOLOR SPECIAL</span><button class="icon-btn" data-action="share-drink">↗</button></header>' +
       '<section class="result-hero">' + drinkVisual(drink,"result") + '</section>' +
-      '<section class="result-title"><span class="eyebrow">今日水彩特调 · ' + glassLabel + '</span>' +
+      '<section class="result-title"><span class="eyebrow">今日情绪特调 · ' + glassLabel + (drink.aiGenerated ? ' · AI GENERATED' : ' · LOCAL') + '</span>' +
       '<h1>' + escapeHTML(drink.name) + '</h1><p class="result-subtitle">' + escapeHTML(drink.subtitle) + '</p>' +
       '<div class="tags">' + (drink.flavors || []).map(function (flavor) {
         return '<span class="tag">' + escapeHTML(flavor) + '</span>';
@@ -1077,27 +1260,44 @@
     render();
     var messages = [
       "正在提取今天的颜色……",
-      "加入一点尚未说出口的话……",
-      "让情绪在水里慢慢晕开……",
-      "正在调整杯型与余味……",
-      "你的水彩特调即将完成。"
+      "千问正在理解尚未说出口的话……",
+      "正在匹配你的个人风味档案……",
+      "正在校验现实调酒配方……",
+      "让今天的情绪慢慢融进杯中……",
+      "你的 AI 特调即将完成。"
     ];
+    var messageIndex = 0;
     var timer = window.setInterval(function () {
-      state.mixingIndex += 1;
+      messageIndex = Math.min(messageIndex + 1, messages.length - 1);
       var message = document.getElementById("mixingMessage");
-      if (message && messages[state.mixingIndex]) message.textContent = messages[state.mixingIndex];
-      if (state.mixingIndex >= messages.length - 1) {
-        window.clearInterval(timer);
-        window.setTimeout(function () {
-          state.currentDrink = generateDrink();
-          state.recipeMode = "alcohol";
-          state.recipeServings = 1;
-          state.recipeLevel = "beginner";
-          state.view = "result";
-          render();
-        }, 700);
+      if (message) message.textContent = messages[messageIndex];
+    }, 1100);
+
+    var localDrink = generateDrink();
+    var minimumDelay = new Promise(function (resolve) { window.setTimeout(resolve, 2600); });
+    Promise.all([requestAIDrink(), minimumDelay]).then(function (values) {
+      var aiPayload = values[0];
+      if (aiPayload && aiPayload.ok && aiPayload.data) {
+        state.currentDrink = applyAIResult(localDrink, aiPayload.data, aiPayload.model);
+        state.aiSource = "ai";
+      } else {
+        state.currentDrink = localDrink;
+        state.currentDrink.aiGenerated = false;
+        state.aiSource = "local";
       }
-    }, 680);
+      state.recipeMode = state.preferences.alcohol === "zero" ? "zero" : "alcohol";
+      state.recipeServings = 1;
+      state.recipeLevel = "beginner";
+      state.view = "result";
+      render();
+      if (state.aiSource === "local") {
+        if (aiPayload && aiPayload.code === "LIMIT") showToast("今日 AI 次数已用完，已使用本地配方");
+        else if (state.aiStatus === "offline") showToast("API 尚未配置，已使用本地配方");
+        else showToast("AI 暂时没有响应，已自动使用本地配方");
+      } else {
+        showToast("千问已完成这杯专属特调");
+      }
+    }).finally(function () { window.clearInterval(timer); });
   }
 
   function findSample(id) {
@@ -1417,7 +1617,7 @@
     ctx.globalAlpha = .7;
     ctx.font = "500 30px system-ui";
     ctx.textAlign = "left";
-    ctx.fillText("MOOD MIXER · 水彩情绪特调",86,108);
+    ctx.fillText("MOOD MIXER · 情绪调酒师",86,108);
     ctx.globalAlpha = 1;
 
     paintCanvasDrink(ctx,drink);
@@ -1443,7 +1643,7 @@
     ctx.font = "400 25px system-ui";
     ctx.fillText(new Date(drink.createdAt).toLocaleDateString("zh-CN"),86,1810);
     ctx.textAlign = "right";
-    ctx.fillText("把今天的情绪，调成一杯水彩。",994,1810);
+    ctx.fillText("把今天的情绪，调成一杯酒。",994,1810);
 
     var preview = document.getElementById("sharePreview");
     if (preview) preview.src = canvas.toDataURL("image/png");
@@ -1643,6 +1843,24 @@
       return;
     }
 
+    if (action === "toggle-taste") {
+      var taste = target.getAttribute("data-value");
+      var tasteIndex = state.preferences.tastes.indexOf(taste);
+      if (tasteIndex >= 0) state.preferences.tastes.splice(tasteIndex,1);
+      else if (state.preferences.tastes.length < 4) state.preferences.tastes.push(taste);
+      else { showToast("最多选择四项风味偏好"); return; }
+      savePreferences();
+      renderMain();
+      return;
+    }
+
+    if (action === "set-alcohol-pref") {
+      state.preferences.alcohol = target.getAttribute("data-value");
+      savePreferences();
+      renderMain();
+      return;
+    }
+
     if (action === "install-app") {
       if (state.installPrompt) {
         state.installPrompt.prompt();
@@ -1670,6 +1888,9 @@
       if (window.confirm("确定清空手机上的全部饮品和收藏吗？")) {
         setSavedDrinks([]);
         setFavorites([]);
+        safeStorageRemove(STORAGE.preferences);
+        safeStorageRemove(STORAGE.aiUsage);
+        state.preferences = defaultPreferences();
         showToast("本地数据已清空");
         renderMain();
       }
@@ -1880,6 +2101,11 @@
       state.form.note = event.target.value;
       return;
     }
+    if (event.target.id === "avoidIngredients") {
+      state.preferences.avoid = event.target.value.slice(0,100);
+      savePreferences();
+      return;
+    }
     if (event.target.id === "intensityRange") {
       state.form.intensity = Number(event.target.value);
       var number = document.getElementById("rangeNumber");
@@ -1906,7 +2132,7 @@
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("./sw.js?v=711").catch(function () {});
+      navigator.serviceWorker.register("./sw.js?v=81").catch(function () {});
     });
   }
 

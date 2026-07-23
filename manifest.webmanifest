@@ -2,14 +2,14 @@
   "id": "./",
   "name": "情绪调酒师 Mood Mixer",
   "short_name": "Mood Mixer",
-  "start_url": "./?pwa=71",
+  "start_url": "./?pwa=81",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#160f1d",
   "theme_color": "#160f1d",
   "lang": "zh-CN",
-  "description": "把今天的情绪调成一杯水彩特调。",
+  "description": "接入千问的情绪调酒师。",
   "icons": [
     {
       "src": "./assets/icon-192.png",
